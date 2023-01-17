@@ -23,7 +23,7 @@ const XHTMLNS = 'http://www.w3.org/1999/xhtml';
 // there is some very weird behaviour in this, like 'await' not doing
 // what it's supposed to etc
 
-// anyway most of this code is dead 
+// anyway most of this code is dead
 
 async function populateBookmarks (roots, depth, selected) {
     if (!depth) depth = 0;
@@ -64,7 +64,7 @@ async function fetchBookmarks (roots) {
         console.log(obj.title, obj.type);
         var kids = await browser.bookmarks.getChildren(obj.id);
         //console.log(kids);
-        var sub = await fetchBookmarks(kids); 
+        var sub = await fetchBookmarks(kids);
         //if (kids && kids.length > 0) sub = await fetchBookmarks(kids);
         console.log(sub);
 
@@ -113,7 +113,7 @@ async function constructBookmarks (struct, root, selected, depth) {
 
     await struct.forEach(async elem => {
         //console.log(elem);
-      
+
         let opt = document.createElementNS(XHTMLNS, 'option');
         root.appendChild(opt);
         opt.value = elem[0];
@@ -127,7 +127,8 @@ async function constructBookmarks (struct, root, selected, depth) {
 }
 
 
-async function loadBookmarks () {
+async function loadBookmarks (e) {
+    console.log(e);
     getFolders().then(async struct => {
         let bm = document.getElementById('bookmarks');
 
@@ -161,7 +162,5 @@ document.getElementById('pinned').addEventListener(
 document.getElementById('bookmarks').addEventListener(
     'change', setBookmarkFolder, false);
 
-browser.bookmarks.onChanged.addListener(e => { console.log(e); loadBookmarks(); } );
-browser.bookmarks.onCreated.addListener(e => { console.log(e); loadBookmarks(); } );
-browser.bookmarks.onMoved.addListener(e => { console.log(e); loadBookmarks(); } );
-browser.bookmarks.onRemoved.addListener(e => { console.log(e); loadBookmarks(); } );
+['onChanged', 'onCreated', 'onMoved', 'onRemoved'].forEach(k =>
+    browser.bookmarks[k].addListener(e => loadBookmarks(e)));

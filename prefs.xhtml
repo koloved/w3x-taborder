@@ -3,9 +3,15 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <title>Order Tabs By Domain</title>
+    <style type="text/css">
+      html, body, form {
+        background-color: transparent !important;
+        color: inherit;
+      }
+    </style>
   </head>
   <body>
-    <form>
+    <form id="prefs">
       <p><label><input id="pinned" type="checkbox" checked="checked" name="pinned"/>Include pinned tabs</label></p>
       <p>Bookmark tab sweeps under <select id="bookmarks" name="bookmarks"></select></p>
     </form>
