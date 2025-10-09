@@ -11,12 +11,12 @@ const SCHEMES = [
         /^(http)s?:$/, /^(file):$/, /^s?(ftp):$/, /^(about):$/, /(.*)/];
 
 function compareSchemes (a, b) {
-    let elems = [a, b].map(x => {
-        let scheme = x.protocol.toLowerCase();
-        let rank   = SCHEMES.findIndex(y => { return scheme.match(y); });
+    const elems = [a, b].map(x => {
+        const scheme = x.protocol.toLowerCase();
+        const rank   = SCHEMES.findIndex(y => scheme.match(y));
         return [rank, scheme.match(SCHEMES[rank])[1]];
     });
-    let cmp = elems[0][0] - elems[1][0];
+    const cmp = elems[0][0] - elems[1][0];
     if (cmp == 0) {
         a = elems[0][1];
         b = elems[1][1];
@@ -26,14 +26,14 @@ function compareSchemes (a, b) {
 }
 
 function compareDomains (a, b) {
-    let elems = [a, b].map(x => {
+    const elems = [a, b].map(x => {
         x = x.hostname.toLowerCase().replace(/^www\d*\./, '');
         return x.split('.').reverse();
     });
 
     while (elems[0].length > 0 || elems[1].length > 0) {
-        let d1 = elems[0].shift() || '';
-        let d2 = elems[1].shift() || '';
+        const d1 = elems[0].shift() || '';
+        const d2 = elems[1].shift() || '';
         if (d1 == d2) continue;
         return d1 < d2 ? -1 : 1;
     }
@@ -42,9 +42,7 @@ function compareDomains (a, b) {
 }
 
 function compareLocal (a, b) {
-    let elems = [a, b].map(x => {
-        return x.pathname + x.search + x.hash;
-    });
+    const elems = [a, b].map(x => x.pathname + x.search + x.hash);
     a = elems[0];
     b = elems[1];
     return a < b ? -1 : a > b ? 1 : 0;
@@ -56,6 +54,7 @@ function compareURIs (a, b) {
 
     // console.debug(`${a} <=> ${b}`);
 
+    // this one actually needs to be a let
     let cmp = compareSchemes(a, b);
     if (cmp === 0) {
         cmp = compareDomains(a, b);
@@ -67,8 +66,8 @@ function compareURIs (a, b) {
 
 function compareTabs (a, b) {
     // note the inversion here is deliberate
-    let ap = a.pinned ? 0 : 1;
-    let bp = b.pinned ? 0 : 1;
+    const ap = a.pinned ? 0 : 1;
+    const bp = b.pinned ? 0 : 1;
     // pinned tabs always come before unpinned tabs
     let cmp = ap - bp;
     if (cmp === 0) {
@@ -84,7 +83,7 @@ function compareTabs (a, b) {
 
 function moveTabs (id, spec, fn) {
     if (browser.tabs.move.length == 1) {
-        let p = browser.tabs.move(id, spec);
+        const p = browser.tabs.move(id, spec);
         return fn ? p.then(fn) : p;
     }
     return browser.tabs.move(id, spec, fn || function () {});
@@ -100,7 +99,7 @@ function sortTabsByDomain (tab) {
     browser.storage.sync.get('pinned-tabs').then(p => {
         p = typeof p['pinned-tabs'] === 'undefined' ? true : p['pinned-tabs'];
 
-        let mt = t => {
+        const mt = t => {
             t.sort(compareTabs);
             for (let i = 0; i < t.length; i++) {
                 if (t[i].pinned && !p) continue;
@@ -127,7 +126,7 @@ function menuCreated (m) {
 // every time the menu is refreshed.
 const TAB_MAP = {};
 
-const CONTEXTS = ['all', 'page', 'action']; // 'tab'
+const CONTEXTS = ['tab', 'page', 'page_action']; // 'tab'
 
 // This is a dispatch table that refines browser.menus.onShown by
 // mapping menu item IDs to handler functions which are proxied by
@@ -140,24 +139,30 @@ const SHOWN = {
     // used to inform any subsequent click action.
     ttnw: async function (info, tab) {
 
+        //console.debug(TAB_MAP);
+
         // first order of business is to wipe out the submenus and the
         // contents of the state object
         for (let tm in TAB_MAP) {
-            await browser.menus.remove(tm);
+            // console.log(tm);
+            // this will complain 
+            await browser.menus.remove(tm).catch(e => console.log(e));
             delete TAB_MAP[tm];
         }
 
+        // console.debug(tab.url);
+
         // parse the URI to make it useful
-        let url = new URL(tab.url);
+        const url = new URL(tab.url);
         if (url.hostname !== '') {
             // process the domain name and split it into individual labels
-            let d  = url.hostname.toLowerCase().replace(/^www\d*\.+/, '');
-            let dl = d.split(/\.+/);
+            const d  = url.hostname.toLowerCase().replace(/^www\d*\.+/, '');
+            const dl = d.split(/\.+/);
 
             //console.log(info, dl);
 
             // obtain the IDs of the tabs in this window
-            let ids = (await browser.tabs.query({
+            const ids = (await browser.tabs.query({
                 windowId: tab.windowId, pinned: false })).map(
                     t => t.id).filter((e, i, a) => a.indexOf(e) === i).sort(
                         (a, b) => a < b ? -1 : a > b ? 1 : 0);
@@ -170,10 +175,10 @@ const SHOWN = {
             // filter is limited.)
             let enable = false;
             for (let i = 0; i < dl.length; i++) {
-                let base = `ttnw-${i+1}`;
-                let mask = `*.${dl.slice(i).join('.')}`;
-                let mine = []; // tabs in this window
-                let othr = []; // tabs in other windows
+                const base = `ttnw-${i+1}`;
+                const mask = `*.${dl.slice(i).join('.')}`;
+                const mine = []; // tabs in this window
+                const othr = []; // tabs in other windows
                 let tabs = (await browser.tabs.query({
                     url: `*://${mask}/*`, pinned: false })).sort(compareTabs);
                 // pinned tabs are unconditionally verboten since
@@ -190,18 +195,20 @@ const SHOWN = {
                     (t.windowId === tab.windowId ? mine : othr).push(t); });
 
                 // recycle the window if all the tabs are on this window
-                let recycle = mine.length == ids.length &&
+                const recycle = mine.length == ids.length &&
                     mine.every(t => ids.indexOf(t.id) >= 0);
-                let variants = !recycle && othr.length > 0;
+                const variants = !recycle && othr.length > 0;
 
                 //console.log(base, recycle);
 
                 // append the number of objects to the title
-                let title = mask + (variants ? '' : ` (${tabs.length})`);
+                const title = mask + (variants ? '' : ` (${tabs.length})`);
 
 
                 // skip if no-op
                 if (recycle && othr.length == 0) continue;
+
+                console.debug('enabling...');
 
                 enable = true;
 
@@ -212,15 +219,15 @@ const SHOWN = {
                 if (variants) {
                     TAB_MAP[base] = {};
 
-                    let v = {
+                    const v = {
                         current: [mine, 'From This Window Only'],
                         all: [tabs, 'From All Windows']
                     };
 
                     for (let j in v) {
-                        let subid = `${base}-${j}`;
+                        const subid = `${base}-${j}`;
                         TAB_MAP[subid] = { recycle: false, tabs: v[j][0] };
-                        let subtitle = v[j][1] + ` (${v[j][0].length})`;
+                        const subtitle = v[j][1] + ` (${v[j][0].length})`;
                         await browser.menus.create({
                             id: subid,
                             parentId: base, title: subtitle,
@@ -256,9 +263,10 @@ if (browser.menus.onHidden) browser.menus.onHidden.addListener(
         await browser.menus.update('ttnw', { enabled: false });
     });
 
-function tabWTF(info, tab) {
-    let id = info.menuIds[0];
-    if (SHOWN[id]) SHOWN[id](info, tab);
+async function tabWTF(info, tab) {
+    const id = info.menuIds[0];
+    console.debug(id, SHOWN);
+    if (SHOWN[id]) await SHOWN[id](info, tab);
 }
 
 if (browser.menus.onShown) browser.menus.onShown.addListener(tabWTF);
@@ -282,14 +290,14 @@ else {
 
 browser.menus.onClicked.addListener(async function (info, tab) {
     // obtain the list of tabs and whether to recycle the window
-    let id      = info.menuItemId;
+    const id = info.menuItemId;
 
     // fucking chrome
     if (!TAB_MAP[id]) SHOWN[info.menuIds[0]](info, tab);
     else console.log(info, TAB_MAP[id]);
 
-    let recycle = TAB_MAP[id].recycle;
-    let targets = TAB_MAP[id].tabs;
+    const recycle = TAB_MAP[id].recycle;
+    const targets = TAB_MAP[id].tabs;
 
     if (targets && targets.length > 0) {
 
@@ -304,7 +312,7 @@ browser.menus.onClicked.addListener(async function (info, tab) {
         }
 
         // get the highest index of the target window
-        let max = (await browser.tabs.query({ windowId: win.id })).reduce(
+        const max = (await browser.tabs.query({ windowId: win.id })).reduce(
             (a, b) => { return a.index > b.index ? a : b; }, -1).index + 1;
         console.log(`next window position is ${max}`);
 
