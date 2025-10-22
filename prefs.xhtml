@@ -3,17 +3,13 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <title>Order Tabs By Domain</title>
-    <style type="text/css">
-      html, body, form {
-        background-color: transparent !important;
-        color: inherit;
-      }
-    </style>
+    <link rel="stylesheet" type="text/css" href="chrome://browser/content/extension.css"/>
   </head>
   <body>
     <form id="prefs">
-      <p><label><input id="pinned" type="checkbox" checked="checked" name="pinned"/>Include pinned tabs</label></p>
-      <p>Bookmark tab sweeps under <select id="bookmarks" name="bookmarks"></select></p>
+      <p><label><input id="context-menu" type="checkbox" checked="checked" name="context-menu"/>Enable <q>group tabs to window</q> context menu</label></p>
+      <p><label><input id="pinned" type="checkbox" name="pinned"/>Include pinned tabs in move to new window</label></p>
+      <!--<p>Bookmark tab sweeps under <select id="bookmarks" name="bookmarks"></select></p>-->
     </form>
     <script type="text/javascript" src="prefs.js"/>
   </body>

@@ -7,6 +7,16 @@ if (typeof browser == "undefined" && typeof chrome == "object") {
     if (!browser.browserAction) browser.browserAction = browser.action;
 }
 
+const BSS = browser.storage.sync;
+
+// STORAGE DEFAULTS
+BSS.getKeys().then(keys => {
+    const obj = {};
+    if (!('context-menu' in keys)) obj['context-menu'] = true;
+    if (!('pinned-tabs' in keys)) obj['pinned-tabs'] = false;
+    BSS.set(obj);
+});
+
 const SCHEMES = [
         /^(http)s?:$/, /^(file):$/, /^s?(ftp):$/, /^(about):$/, /(.*)/];
 
@@ -96,7 +106,7 @@ function getTabs (spec, func) {
 }
 
 function sortTabsByDomain (tab) {
-    browser.storage.sync.get('pinned-tabs').then(p => {
+    BSS.get('pinned-tabs').then(p => {
         p = typeof p['pinned-tabs'] === 'undefined' ? true : p['pinned-tabs'];
 
         const mt = t => {
@@ -110,7 +120,6 @@ function sortTabsByDomain (tab) {
         getTabs({ currentWindow: true }, mt);
     });
 }
-
 
 browser.browserAction.onClicked.addListener(sortTabsByDomain);
 
@@ -138,6 +147,14 @@ const SHOWN = {
     // also wipes and regenerates the submenus and the state object
     // used to inform any subsequent click action.
     ttnw: async function (info, tab) {
+        // uhh do we want this here?
+        const state = await BSS.get('context-menu');
+        if (!state['context-menu']) {
+            console.log('not enabling context menu');
+            return;
+        }
+
+        await browser.menus.update('ttnw', { visible: true });
 
         //console.debug(TAB_MAP);
 
@@ -145,7 +162,7 @@ const SHOWN = {
         // contents of the state object
         for (let tm in TAB_MAP) {
             // console.log(tm);
-            // this will complain 
+            // this will complain
             await browser.menus.remove(tm).catch(e => console.log(e));
             delete TAB_MAP[tm];
         }
@@ -248,23 +265,33 @@ const SHOWN = {
 
 // add the root menu
 
-
 browser.menus.create({
     id: "ttnw",
     title: 'Group Tabs to Window',
-    //contexts: ["page", "tab"]
-    contexts: CONTEXTS
+    contexts: CONTEXTS,
+    visible: false, // initialize invisible
 }, menuCreated);
 
 // add the listeners
 
 if (browser.menus.onHidden) browser.menus.onHidden.addListener(
     async function () {
-        await browser.menus.update('ttnw', { enabled: false });
+        await browser.menus.update('ttnw', { enabled: false, visible: false });
     });
 
 async function tabWTF(info, tab) {
-    const id = info.menuIds[0];
+    // console.log(info);
+    let id = info.menuIds[0];
+
+    // this is dumb
+    if (!id) {
+        const state = (await BSS.get('context-menu') || {})['context-menu'];
+        if (state) {
+            
+            id = 'ttnw';
+        }
+    }
+
     console.debug(id, SHOWN);
     if (SHOWN[id]) await SHOWN[id](info, tab);
 }

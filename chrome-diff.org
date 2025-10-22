@@ -1,7 +1,7 @@
 #+STARTUP: showall hidestars
 * differences between ff and chrome
   - [ ] manifest v3
-  - [ ] no ~menus~ permission (use ~contextMenus~) 
+  - [ ] no ~menus~ permission (use ~contextMenus~)
   - [ ] no ~browser.menus~ either
   - [ ] no ~tabs~ context type in ~contextMenus.create~
   - [ ] no ~background/scripts~ in manifest; need ~background/service_worker~

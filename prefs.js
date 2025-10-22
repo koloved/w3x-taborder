@@ -4,18 +4,25 @@ if (typeof browser == "undefined" && typeof chrome == "object") {
     browser = chrome;
 }
 
-function togglePinned (ev) {
-    //console.log(ev.target.checked);
-    browser.storage.sync.set({ 'pinned-tabs': ev.target.checked });
-    ev.preventDefault();
+function storeCheckBox (key) {
+    return function (event) {
+        let obj = {};
+        obj[key] = event.target.checked;
+        browser.storage.sync.set(obj);
+        event.preventDefault();
+    };
 }
 
-function restoreState () {
-    //console.log('whiskey tango foxtrot');
-    browser.storage.sync.get('pinned-tabs').then(x => {
-        //console.log(x);
-        document.getElementById('pinned').checked = x['pinned-tabs'];
-    }, y => { console.log(y) });
+function restoreStates (mapping) {
+    return function (event) {
+        console.log(mapping);
+        Object.entries(mapping).forEach(([key, value]) => {
+            browser.storage.sync.get(key).then(x => {
+                console.debug(x);
+                document.getElementById(value).checked = x[key];
+            }, y => { console.error(y); });
+        });
+    };
 }
 
 const XHTMLNS = 'http://www.w3.org/1999/xhtml';
@@ -155,12 +162,22 @@ function setBookmarkFolder (e) {
 }
 
 
-document.addEventListener('DOMContentLoaded', restoreState, false);
-document.addEventListener('DOMContentLoaded', loadBookmarks, false);
+document.addEventListener('DOMContentLoaded', restoreStates({
+    'pinned-tabs': 'pinned', 'context-menu': 'context-menu' }), false);
+
+document.getElementById('context-menu').addEventListener(
+    'change', storeCheckBox('context-menu'), false);
+
 document.getElementById('pinned').addEventListener(
-    'change', togglePinned, false);
+    'change', storeCheckBox('pinned-tabs'), false);
+
+/*
+document.addEventListener('DOMContentLoaded', loadBookmarks, false);
+
+
 document.getElementById('bookmarks').addEventListener(
     'change', setBookmarkFolder, false);
 
 ['onChanged', 'onCreated', 'onMoved', 'onRemoved'].forEach(k =>
     browser.bookmarks[k].addListener(e => loadBookmarks(e)));
+*/
